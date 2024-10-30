@@ -20,13 +20,24 @@ namespace MemorySharingAPI
 
             // Add services to the container.
 
+            // Enable CORS to allow requests from the front-end
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowLocalhost",
+                    builder => builder
+                        .WithOrigins("http://localhost:8080") // Thay URL front-end của bạn ở đây
+                        .AllowAnyMethod()
+                        .AllowAnyHeader()
+                        .AllowCredentials());
+            });
+
             builder.Services.AddControllers(options =>
             {
                 var policy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
                 options.Filters.Add(new AuthorizeFilter(policy));
             });
 
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+            // Configure Swagger/OpenAPI
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(options =>
             {
@@ -55,11 +66,11 @@ namespace MemorySharingAPI
                 });
             });
 
-            // Thêm AppDbContext với chuỗi kết nối SQL Server từ appsettings.json
+            // Configure DbContext with SQL Server connection from appsettings.json
             builder.Services.AddDbContext<MemorySharingPlatformContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-            // Add Identity 
+            // Configure Identity
             builder.Services.AddIdentity<User, Role>(options =>
             {
                 options.Password.RequiredLength = 5;
@@ -74,7 +85,7 @@ namespace MemorySharingAPI
                 .AddUserStore<UserStore<User, Role, MemorySharingPlatformContext>>()
                 .AddRoleStore<RoleStore<Role, MemorySharingPlatformContext>>();
 
-            // Add Authentication
+            // Configure Authentication with JWT
             builder.Services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -89,7 +100,6 @@ namespace MemorySharingAPI
                 {
                     OnTokenValidated = context =>
                     {
-                        // Log the claims in the token
                         var claims = context.Principal!.Claims;
                         foreach (var claim in claims)
                         {
@@ -111,20 +121,19 @@ namespace MemorySharingAPI
                     ValidateAudience = true,
                     ValidAudience = builder.Configuration["Jwt:Audience"],
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey
-                    (Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.Zero
                 };
             });
 
-            // Add Authorization
+            // Add Authorization (can be customized further if needed)
             builder.Services.AddAuthorization(options =>
             {
 
             });
 
-            // Add Transient to Token Service
+            // Register Token Service
             builder.Services.AddTransient<ITokenService, TokenService>();
 
             var app = builder.Build();
@@ -137,6 +146,9 @@ namespace MemorySharingAPI
             }
 
             app.UseHttpsRedirection();
+
+            // Enable CORS before Authentication and Authorization
+            app.UseCors("AllowLocalhost");
 
             app.UseAuthentication();
             app.UseAuthorization();
