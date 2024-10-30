@@ -1,17 +1,14 @@
-﻿using MemorySharingAPI.Data;
-using MemorySharingAPI.Models;
+﻿using MemorySharingAPI.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 [Route("api/[controller]")]
 [ApiController]
 public class MomentController : ControllerBase
 {
-    private readonly AppDbContext _context;
+    private readonly MemorySharingPlatformContext _context;
 
-    public MomentController(AppDbContext context)
+    public MomentController(MemorySharingPlatformContext context)
     {
         _context = context;
     }
